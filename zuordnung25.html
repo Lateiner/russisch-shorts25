@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Interaktiv: Feiertage zuordnen</title>
+    <style>
+        :root {
+            --primary-color: #2b6cb0;
+            --primary-hover: #1a528d;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-color: #2d3748;
+            --border-color: #e2e8f0;
+            --success-color: #48bb78;
+            --error-color: #f56565;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .instruction {
+            margin-bottom: 25px;
+            text-align: center;
+            color: #4a5568;
+            font-size: 1.05rem;
+        }
+
+        .instruction .hint {
+            display: block;
+            font-size: 0.85rem;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        /* Responsive Layout Grid */
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr 1.2fr;
+            }
+        }
+
+        /* Wort-Pool */
+        .words-container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-content: flex-start;
+            justify-content: center;
+            background: #edf2f7;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 100px;
+        }
+
+        @media (min-width: 768px) {
+            .words-container {
+                flex-direction: column;
+                justify-content: flex-start;
+                flex-wrap: nowrap;
+            }
+        }
+
+        .word-card {
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: grab;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            user-select: none;
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: fit-content;
+        }
+
+        @media (min-width: 768px) {
+            .word-card {
+                width: 100%;
+            }
+        }
+
+        .word-card:active {
+            cursor: grabbing;
+        }
+
+        .word-card.selected {
+            background-color: #d69e2e;
+            transform: scale(1.03);
+            box-shadow: 0 0 0 3px #faf089;
+        }
+
+        /* Ziel-Zonen */
+        .targets-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .target-row {
+            display: flex;
+            flex-direction: column;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: #fff;
+            transition: border-color 0.2s, background-color 0.2s;
+            overflow: hidden;
+        }
+
+        @media (min-width: 500px) {
+            .target-row {
+                flex-direction: row;
+                align-items: stretch;
+            }
+        }
+
+        .target-description {
+            padding: 15px;
+            flex: 1;
+            font-size: 0.95rem;
+            background: #fcfcfc;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        @media (min-width: 500px) {
+            .target-description {
+                border-bottom: none;
+                border-right: 2px solid var(--border-color);
+            }
+        }
+
+        .drop-zone {
+            padding: 10px;
+            min-height: 60px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+            transition: background-color 0.2s;
+        }
+
+        @media (min-width: 500px) {
+            .drop-zone {
+                width: 180px;
+                min-height: auto;
+            }
+        }
+
+        .drop-zone.drag-over {
+            background-color: #ebf8ff;
+        }
+
+        /* Auswertung & Feedback */
+        .target-row.correct {
+            border-color: var(--success-color);
+        }
+        .target-row.correct .target-description {
+            background-color: #f0fff4;
+        }
+        .target-row.correct .drop-zone {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .target-row.incorrect {
+            border-color: var(--error-color);
+        }
+        .target-row.incorrect .target-description {
+            background-color: #fff5f5;
+        }
+        .target-row.incorrect .drop-zone {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        @media (min-width: 480px) {
+            .action-area {
+                flex-direction: row;
+                justify-content: center;
+            }
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            width: 100%;
+        }
+
+        @media (min-width: 480px) {
+            .btn {
+                width: auto;
+            }
+        }
+
+        .btn-check {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-check:hover {
+            background-color: #38a169;
+        }
+
+        .btn-reset {
+            background-color: #718096;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background-color: #4a5568;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .result-message {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-height: 30px;
+        }
+        
+        .result-message.win { color: var(--success-color); }
+        .result-message.lose { color: var(--error-color); }
+
+        /* Wenn ein Wort im Zielfeld platziert ist */
+        .drop-zone .word-card {
+            width: 100%;
+            cursor: pointer;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Russische Feiertage zuordnen</h1>
+    <div class="instruction">
+        Ordne die russischen Begriffe den passenden Feiertagen zu.
+        <span class="hint">📱 Am Smartphone/Tablet: Erst das Wort antippen, dann das passende graue Feld berühren.</span>
+    </div>
+
+    <div class="game-area">
+        <!-- Pool für russische Wörter -->
+        <div class="words-container" id="wordsPool">
+            <!-- Wird dynamisch per JS befüllt -->
+        </div>
+
+        <!-- Zielzonen mit deutschen Beschreibungen -->
+        <div class="targets-container" id="targetsContainer">
+            <!-- Wird dynamisch per JS befüllt -->
+        </div>
+    </div>
+
+    <div class="action-area">
+        <button class="btn btn-check" id="checkBtn">Überprüfen</button>
+        <button class="btn btn-reset" id="resetBtn">Zurücksetzen</button>
+    </div>
+    
+    <div class="result-message" id="resultMsg"></div>
+</div>
+
+<script>
+    // Spieldaten basierend auf der Anleitung
+    const data = [
+        { id: "jan", ru: "январские", de: "Neujahrs- und Weihnachtsferien (im Januar)" },
+        { id: "feb", ru: "февральские", de: "Freie Tage rund um den Tag des Vaterlandsverteidigers" },
+        { id: "mar", ru: "мартовские", de: "Freie Tage rund um den Internationalen Frauentag" },
+        { id: "mai", ru: "майские", de: "Freie Tage rund um den Tag der Arbeit und Tag des Sieges" },
+        { id: "nov", ru: "ноябрьские", de: "Freie Tage rund um den Tag der Einheit des Volkes" }
+    ];
+
+    let selectedWordNode = null;
+
+    const wordsPool = document.getElementById('wordsPool');
+    const targetsContainer = document.getElementById('targetsContainer');
+    const checkBtn = document.getElementById('checkBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultMsg = document.getElementById('resultMsg');
+
+    // Spiel initialisieren
+    function initGame() {
+        wordsPool.innerHTML = '';
+        targetsContainer.innerHTML = '';
+        resultMsg.innerHTML = '';
+        resultMsg.className = 'result-message';
+        selectedWordNode = null;
+
+        // 1. Wörter zufällig mischen (Schütteln für den Pool)
+        const shuffledWords = [...data].sort(() => Math.random() - 0.5);
+        shuffledWords.forEach(item => {
+            const wordEl = document.createElement('div');
+            wordEl.className = 'word-card';
+            wordEl.textContent = item.ru;
+            wordEl.id = `word-${item.id}`;
+            wordEl.setAttribute('draggable', 'true');
+            
+            // Drag-and-Drop Events (Desktop)
+            wordEl.addEventListener('dragstart', handleDragStart);
+            wordEl.addEventListener('dragend', handleDragEnd);
+            
+            // Klick-Event (Mobil-Fallback)
+            wordEl.addEventListener('click', handleWordClick);
+
+            wordsPool.appendChild(wordEl);
+        });
+
+        // 2. Zielzonen zufällig mischen
+        const shuffledTargets = [...data].sort(() => Math.random() - 0.5);
+        shuffledTargets.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'target-row';
+            row.id = `row-${item.id}`;
+            row.setAttribute('data-correct-id', item.id);
+
+            const desc = document.createElement('div');
+            desc.className = 'target-description';
+            desc.textContent = item.de;
+
+            const dropZone = document.createElement('div');
+            dropZone.className = 'drop-zone';
+            dropZone.setAttribute('data-target-id', item.id);
+            
+            // Dragover & Drop Events
+            dropZone.addEventListener('dragover', handleDragOver);
+            dropZone.addEventListener('dragleave', handleDragLeave);
+            dropZone.addEventListener('drop', handleDrop);
+            
+            // Klick-Event für Mobilgeräte
+            dropZone.addEventListener('click', handleZoneClick);
+
+            row.appendChild(desc);
+            row.appendChild(dropZone);
+            targetsContainer.appendChild(row);
+        });
+    }
+
+    // --- KLASSISCHES DRAG & DROP (DESKTOP) ---
+    function handleDragStart(e) {
+        e.dataTransfer.setData('text/plain', e.target.id);
+        setTimeout(() => e.target.style.opacity = '0.4', 0);
+    }
+
+    function handleDragEnd(e) {
+        e.target.style.opacity = '1';
+        // Selektions-Klassen aufräumen
+        if(selectedWordNode) {
+            selectedWordNode.classList.remove('selected');
+            selectedWordNode = null;
+        }
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        if (!this.hasChildNodes()) {
+            this.classList.add('drag-over');
+        }
+    }
+
+    function handleDragLeave() {
+        this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        // Verhindern, dass mehr als ein Wort in der Zone landet
+        if (this.hasChildNodes()) return;
+
+        const id = e.dataTransfer.getData('text/plain');
+        const draggedElement = document.getElementById(id);
+        if (draggedElement) {
+            this.appendChild(draggedElement);
+        }
+    }
+
+    // --- KLICK-ZUORDNUNG (MOBILGERÄTE & TABLETS) ---
+    function handleWordClick(e) {
+        e.stopPropagation(); // Verhindert ungewollte Event-Überlagerung
+        
+        // Wenn das Wort bereits in einer Drop-Zone liegt, werfe es per Klick zurück in den Pool
+        if (this.parentNode.classList.contains('drop-zone')) {
+            wordsPool.appendChild(this);
+            // Visuelle Auswertung der Zeile zurücksetzen, falls bereits geprüft wurde
+            this.parentNode.parentNode.className = 'target-row';
+            return;
+        }
+
+        // Vorherige Selektion aufheben
+        if (selectedWordNode) {
+            selectedWordNode.classList.remove('selected');
+        }
+
+        // Neue Selektion setzen
+        selectedWordNode = this;
+        this.classList.add('selected');
+    }
+
+    function handleZoneClick(e) {
+        // Falls ein Wort ausgewählt ist und die Zone leer ist
+        if (selectedWordNode && !this.hasChildNodes()) {
+            this.appendChild(selectedWordNode);
+            selectedWordNode.classList.remove('selected');
+            selectedWordNode = null;
+        }
+    }
+
+    // Klick auf den Pool wirft ausgewählte Wörter zurück
+    wordsPool.addEventListener('click', () => {
+        if (selectedWordNode) {
+            selectedWordNode.classList.remove('selected');
+            selectedWordNode = null;
+        }
+    });
+
+    // --- AUSWERTUNG ---
+    checkBtn.addEventListener('click', () => {
+        const rows = targetsContainer.querySelectorAll('.target-row');
+        let correctCount = 0;
+        let totalCount = rows.length;
+        let allPlaced = true;
+
+        rows.forEach(row => {
+            const correctId = row.getAttribute('data-correct-id');
+            const dropZone = row.querySelector('.drop-zone');
+            const placedWord = dropZone.querySelector('.word-card');
+
+            // Prüfen, ob überhaupt ein Wort platziert wurde
+            if (!placedWord) {
+                allPlaced = false;
+                row.className = 'target-row'; // neutral belassen
+                return;
+            }
+
+            const placedId = placedWord.id.replace('word-', '');
+
+            if (placedId === correctId) {
+                row.className = 'target-row correct';
+                correctCount++;
+            } else {
+                row.className = 'target-row incorrect';
+            }
+        });
+
+        // Feedback-Nachricht ausgeben
+        if (!allPlaced) {
+            resultMsg.textContent = "Bitte ordne zuerst alle Wörter zu!";
+            resultMsg.className = "result-message lose";
+        } else if (correctCount === totalCount) {
+            resultMsg.textContent = "Отлично! Alles richtig gelöst! 🎉";
+            resultMsg.className = "result-message win";
+        } else {
+            resultMsg.textContent = `${correctCount} von ${totalCount} richtig. Versuche es noch einmal!`;
+            resultMsg.className = "result-message lose";
+        }
+    });
+
+    // --- RESET ---
+    resetBtn.addEventListener('click', initGame);
+
+    // Erster Start
+    initGame();
+</script>
+
+</body>
+</html>
