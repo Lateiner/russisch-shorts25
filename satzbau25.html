@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Interaktiv: Satzbau-Baukasten (Direkt-Feedback)</title>
+    <style>
+        :root {
+            --primary-color: #2d3748;
+            --accent-color: #3182ce;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-color: #1a202c;
+            --border-color: #cbd5e0;
+            --success-color: #38a169;
+            --error-color: #e53e3e;
+            --word-bg: #ebf8ff;
+            --word-border: #bee3f8;
+            --word-text: #2b6cb0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .instruction {
+            text-align: center;
+            color: #718096;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+
+        .translation-hint {
+            background-color: #f8fafc;
+            border-left: 4px solid var(--accent-color);
+            padding: 12px;
+            border-radius: 4px;
+            font-style: italic;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+            color: #4a5568;
+        }
+
+        /* Satzbereich */
+        .sentence-display {
+            background-color: #fafafa;
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            min-height: 70px;
+            padding: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        /* Wort-Pool */
+        .word-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            background-color: #edf2f7;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            min-height: 60px;
+        }
+
+        /* Wort-Kacheln */
+        .word-token {
+            background-color: var(--word-bg);
+            border: 1px solid var(--word-border);
+            color: var(--word-text);
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .word-token:hover:not(.correct-placed) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Sofort-Feedback-Zustände */
+        .word-token.correct-placed {
+            background-color: #xm;
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+            cursor: default;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .word-token.wrong-blink {
+            background-color: var(--error-color) !important;
+            border-color: var(--error-color) !important;
+            color: white !important;
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        /* Buttons */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-align: center;
+        }
+
+        .btn-restart {
+            background-color: #718096;
+            color: white;
+        }
+        .btn-restart:hover { background-color: #4a5568; }
+
+        .btn-next {
+            background-color: var(--success-color);
+            color: white;
+            display: none;
+        }
+        .btn-next:hover { background-color: #2f855a; }
+
+        .feedback-message {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            min-height: 25px;
+            margin-top: 15px;
+        }
+        .feedback-message.win { color: var(--success-color); }
+        .feedback-message.lose { color: var(--error-color); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 id="mainTitle">Satzbau-Baukasten</h1>
+    <div class="instruction" id="subInstruction">Tippe auf das jeweils nächste logische Wort, um den Satz korrekt aufzubauen:</div>
+
+    <div class="translation-hint" id="translationHint"></div>
+    <div class="sentence-display" id="sentenceDisplay"></div>
+    <div class="word-pool" id="wordPool"></div>
+
+    <div class="action-buttons">
+        <button class="btn btn-restart" id="restartBtn">Neustart</button>
+        <button class="btn btn-next" id="nextBtn">Nächster Satz</button>
+    </div>
+
+    <div class="feedback-message" id="feedbackMessage"></div>
+</div>
+
+<script>
+    // Auf 6 abwechslungsreiche Sätze aus der Anleitung erweitert
+    const sentencesData = [
+        {
+            de: "Was sind deine Pläne für die Januar-Tage?",
+            correctSequence: ["Какие", "планы", "на", "январские?"],
+            scrambledWords: ["на", "январские?", "Какие", "планы"]
+        },
+        {
+            de: "Was machst du an den November-Tagen?",
+            correctSequence: ["Что", "будешь", "делать", "на", "ноябрьские?"],
+            scrambledWords: ["делать", "ноябрьские?", "Что", "на", "будешь"]
+        },
+        {
+            de: "Das bedeutet: Was machst du während der Feiertage?",
+            correctSequence: ["Это", "значит,", "что", "будешь", "делать", "во", "время", "праздников?"],
+            scrambledWords: ["что", "делать", "значит,", "праздников?", "время", "будешь", "Это", "во"]
+        },
+        {
+            de: "Januar-Feiertage finden im Januar statt.",
+            correctSequence: ["Январские", "—", "в", "январе."],
+            scrambledWords: ["в", "Январские", "—", "январе."]
+        },
+        {
+            de: "Die freien Tage im Mai sind im Mai.",
+            correctSequence: ["Майские", "—", "в", "мае."],
+            scrambledWords: ["в", "мае.", "Майские", "—"]
+        },
+        {
+            de: "Wusstet ihr davon?",
+            correctSequence: ["Знали", "об", "этом?"],
+            scrambledWords: ["этом?", "Знали", "об"]
+        }
+    ];
+
+    let currentSentenceIndex = 0;
+    let correctWordsPlacedCount = 0;
+    let isBlinking = false;
+
+    const translationHint = document.getElementById('translationHint');
+    const sentenceDisplay = document.getElementById('sentenceDisplay');
+    const wordPool = document.getElementById('wordPool');
+    const restartBtn = document.getElementById('restartBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const feedbackMessage = document.getElementById('feedbackMessage');
+
+    function initSentence() {
+        sentenceDisplay.innerHTML = '';
+        feedbackMessage.textContent = '';
+        feedbackMessage.className = 'feedback-message';
+        nextBtn.style.display = 'none';
+        correctWordsPlacedCount = 0;
+        isBlinking = false;
+
+        const currentData = sentencesData[currentSentenceIndex];
+        translationHint.innerHTML = `<strong>Gesuchter Satz:</strong> „${currentData.de}“`;
+
+        // Pool aufbauen
+        wordPool.innerHTML = '';
+        currentData.scrambledWords.forEach(word => {
+            const token = document.createElement('div');
+            token.className = 'word-token';
+            token.textContent = word;
+            token.addEventListener('click', () => handleWordClick(token, word));
+            wordPool.appendChild(token);
+        });
+    }
+
+    function handleWordClick(token, clickedWord) {
+        if (isBlinking) return; // Klicks während der Fehler-Animation blockieren
+
+        const currentData = sentencesData[currentSentenceIndex];
+        const targetWord = currentData.correctSequence[correctWordsPlacedCount];
+
+        // Direktes Feedback prüfen
+        if (clickedWord === targetWord) {
+            // Richtig! Wort nach oben in das Satzdisplay verschieben und einfärben
+            token.classList.add('correct-placed');
+            sentenceDisplay.appendChild(token);
+            correctWordsPlacedCount++;
+
+            // Prüfen, ob der gesamte Satz vollständig gelöst wurde
+            if (correctWordsPlacedCount === currentData.correctSequence.length) {
+                feedbackMessage.textContent = "Отлично! Der Satz ist komplett richtig gebaut! 🎉";
+                feedbackMessage.className = "feedback-message win";
+                nextBtn.style.display = 'block';
+                if (currentSentenceIndex === sentencesData.length - 1) {
+                    nextBtn.textContent = "Übung beenden";
+                }
+            }
+        } else {
+            // Falsch! Rotes Aufblinken aktivieren
+            isBlinking = true;
+            token.classList.add('wrong-blink');
+            feedbackMessage.textContent = "Das war nicht das nächste passende Wort. Probiere ein anderes!";
+            feedbackMessage.className = "feedback-message lose";
+
+            setTimeout(() => {
+                token.classList.remove('wrong-blink');
+                isBlinking = false;
+            }, 400);
+        }
+    }
+
+    nextBtn.addEventListener('click', () => {
+        if (currentSentenceIndex < sentencesData.length - 1) {
+            currentSentenceIndex++;
+            initSentence();
+        } else {
+            // Komplett fertig
+            translationHint.style.display = 'none';
+            sentenceDisplay.style.display = 'none';
+            wordPool.style.display = 'none';
+            nextBtn.style.display = 'none';
+            document.getElementById('subInstruction').style.display = 'none';
+            
+            document.getElementById('mainTitle').textContent = "Herzlichen Glückwunsch! 🚀";
+            feedbackMessage.innerHTML = "Поздравляю! Du hast alle 6 Sätze fehlerfrei per Direkt-Feedback gelöst und die Struktur verinnerlicht.";
+            feedbackMessage.className = "feedback-message win";
+        }
+    });
+
+    // Neustart-Button setzt das komplette Spiel auf Satz 1 zurück
+    restartBtn.addEventListener('click', () => {
+        currentSentenceIndex = 0;
+        document.getElementById('mainTitle').textContent = "Satzbau-Baukasten";
+        document.getElementById('subInstruction').style.display = 'block';
+        translationHint.style.display = 'block';
+        sentenceDisplay.style.display = 'flex';
+        wordPool.style.display = 'flex';
+        initSentence();
+    });
+
+    // Initialer Start
+    initSentence();
+</script>
+
+</body>
+</html>
