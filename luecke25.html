@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Interaktiv: Chat-Lückentext</title>
+    <style>
+        :root {
+            --chat-bg: #efe7dd; /* Klassischer Messenger-Hintergrund */
+            --msg-in: #ffffff;
+            --msg-out: #e2f7cb;
+            --text-dark: #303030;
+            --primary-color: #075e54;
+            --accent-color: #128c7e;
+            --success-color: #48bb78;
+            --error-color: #f56565;
+            --border-color: #cbd5e0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--chat-bg);
+            border-radius: 16px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #d1d5db;
+        }
+
+        /* Chat-Header */
+        .chat-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background-color: #eceff1;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+
+        .chat-info h2 {
+            font-size: 1.05rem;
+            margin: 0;
+        }
+
+        .chat-info p {
+            font-size: 0.75rem;
+            color: #b9dfdb;
+        }
+
+        /* Chat-Verlauf */
+        .chat-window {
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            max-height: 65vh;
+        }
+
+        .msg {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.98rem;
+            line-height: 1.45;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Eingehende Nachricht (Deutsch) */
+        .msg.incoming {
+            background-color: var(--msg-in);
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+
+        /* Ausgehende Nachricht (Russischer Lückentext) */
+        .msg.outgoing {
+            background-color: var(--msg-out);
+            align-self: flex-end;
+            border-top-right-radius: 0;
+            width: 90%;
+        }
+
+        .msg-context {
+            font-size: 0.8rem;
+            color: #718096;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Styling für das Dropdown im Satz */
+        .chat-select {
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 4px 8px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background-color: white;
+            color: var(--text-dark);
+            cursor: pointer;
+            outline: none;
+            margin: 0 4px;
+            transition: all 0.2s;
+            max-width: 100%;
+        }
+
+        .chat-select:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* Richtig / Falsch Klassen für die Auswertung */
+        .chat-select.correct {
+            border-color: var(--success-color);
+            background-color: #f0fff4;
+            color: #22543d;
+        }
+
+        .chat-select.incorrect {
+            border-color: var(--error-color);
+            background-color: #fff5f5;
+            color: #742a2a;
+        }
+
+        /* Kontroll-Bereich unten */
+        .input-area {
+            background-color: #f0f2f5;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-top: 1px solid #e1e3e6;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-align: center;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-color);
+        }
+
+        .btn-reset {
+            background-color: #718096;
+        }
+        .btn-reset:hover {
+            background-color: #4a5568;
+        }
+
+        .result-banner {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 5px;
+            min-height: 25px;
+        }
+        .result-banner.win { color: var(--success-color); }
+        .result-banner.lose { color: var(--error-color); }
+    </style>
+</head>
+<body>
+
+<div class="phone-container">
+    <!-- Chat Kopfzeile -->
+    <div class="chat-header">
+        <div class="avatar">Р</div>
+        <div class="chat-info">
+            <h2>Russisch-Kurs (Kontext-Training)</h2>
+            <p>Online • Wähle die richtigen Feiertage</p>
+        </div>
+    </div>
+
+    <!-- Chat Fenster (Lückentext) -->
+    <div class="chat-window" id="chatWindow">
+        
+        <!-- Nachricht 1 (März) -->
+        <div class="msg incoming">
+            <div class="msg-context">Maxim (auf Deutsch):</div>
+            Ich freue mich schon auf den Frauentag im März! Was machst du an den freien Tagen?
+        </div>
+        <div class="msg outgoing">
+            <div class="msg-context">Deine Antwort (auf Russisch):</div>
+            Я пока не знаю, какие у меня планы на 
+            <select class="chat-select" data-correct="мартовские">
+                <option value="">...</option>
+                <option value="январские">январские</option>
+                <option value="мартовские">мартовские</option>
+                <option value="майские">майские</option>
+            </select>.
+        </div>
+
+        <!-- Nachricht 2 (Januar) -->
+        <div class="msg incoming">
+            <div class="msg-context">Maxim (auf Deutsch):</div>
+            Neujahr und Weihnachten im Januar sind immer so gemütlich. Reist ihr dieses Jahr weg?
+        </div>
+        <div class="msg outgoing">
+            <div class="msg-context">Deine Antwort (auf Russisch):</div>
+            Да, мы хотим поехать в горы на 
+            <select class="chat-select" data-correct="январские">
+                <option value="">...</option>
+                <option value="февральские">февральские</option>
+                <option value="ноябрьские">ноябрьские</option>
+                <option value="январские">январские</option>
+            </select>.
+        </div>
+
+        <!-- Nachricht 3 (Mai) -->
+        <div class="msg incoming">
+            <div class="msg-context">Maxim (auf Deutsch):</div>
+            Anfang Mai gibt es ja wieder extra viele freie Tage am Stück durch die Brückentage!
+        </div>
+        <div class="msg outgoing">
+            <div class="msg-context">Deine Antwort (auf Russisch):</div>
+            О да! Мы обычно устраиваем пикник и делаем шашлыки на 
+            <select class="chat-select" data-correct="майские">
+                <option value="">...</option>
+                <option value="майские">майские</option>
+                <option value="мартовские">мартовские</option>
+                <option value="ноябрьские">ноябрьские</option>
+            </select>.
+        </div>
+
+    </div>
+
+    <!-- Interaktions-Leiste unten -->
+    <div class="input-area">
+        <div class="result-banner" id="resultBanner"></div>
+        <button class="btn" id="checkBtn">Nachrichten abschicken & prüfen</button>
+        <button class="btn btn-reset" id="resetBtn" style="display: none;">Nochmal versuchen</button>
+    </div>
+</div>
+
+<script>
+    const checkBtn = document.getElementById('checkBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultBanner = document.getElementById('resultBanner');
+    const selects = document.querySelectorAll('.chat-select');
+    const chatWindow = document.getElementById('chatWindow');
+
+    // Chat beim Laden ganz nach unten scrollen
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    checkBtn.addEventListener('click', () => {
+        let allCorrect = true;
+        let anyEmpty = false;
+        let correctCount = 0;
+
+        selects.forEach(select => {
+            const selectedValue = select.value;
+            const correctAnswer = select.getAttribute('data-correct');
+
+            if (selectedValue === "") {
+                anyEmpty = true;
+                allCorrect = false;
+                select.className = "chat-select"; // neutral
+                return;
+            }
+
+            if (selectedValue === correctAnswer) {
+                select.className = "chat-select correct";
+                correctCount++;
+            } else {
+                select.className = "chat-select incorrect";
+                allCorrect = false;
+            }
+        });
+
+        // Feedback ausgeben
+        if (anyEmpty) {
+            resultBanner.textContent = "Bitte fülle zuerst alle Lücken aus!";
+            resultBanner.className = "result-banner lose";
+        } else if (allCorrect) {
+            resultBanner.textContent = "Отлично! Alle Antworten sind richtig! 💬🎉";
+            resultBanner.className = "result-banner win";
+            checkBtn.style.display = 'none';
+            resetBtn.style.display = 'block';
+        } else {
+            resultBanner.textContent = `${correctCount} von ${selects.length} richtig. Überprüfe die roten Felder!`;
+            resultBanner.className = "result-banner lose";
+            resetBtn.style.display = 'block';
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        selects.forEach(select => {
+            select.value = "";
+            select.className = "chat-select";
+        });
+        resultBanner.textContent = "";
+        resultBanner.className = "result-banner";
+        resetBtn.style.display = 'none';
+        checkBtn.style.display = 'block';
+        chatWindow.scrollTop = 0;
+    });
+</script>
+
+</body>
+</html>
