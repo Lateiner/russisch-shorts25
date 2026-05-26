@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Interaktiv: Hörverstehen im Alltag</title>
+    <style>
+        :root {
+            --primary-color: #4a5568;
+            --accent-color: #3182ce;
+            --accent-hover: #2b6cb0;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-color: #2d3748;
+            --border-color: #e2e8f0;
+            --success-color: #48bb78;
+            --error-color: #f56565;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .instruction {
+            margin-bottom: 25px;
+            text-align: center;
+            color: #718096;
+            font-size: 0.95rem;
+        }
+
+        /* Audio-Bereich */
+        .audio-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #ebf8ff;
+            border: 2px dashed #bee3f8;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .audio-status {
+            font-size: 0.85rem;
+            color: #2b6cb0;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .play-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(49, 130, 206, 0.3);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .play-btn:hover {
+            background-color: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+
+        .play-btn svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
+            margin-left: 4px; /* Optische Zentrierung für das Play-Dreieck */
+        }
+
+        /* Multiple Choice Optionen */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .option-card {
+            background: #fff;
+            border: 2px solid var(--border-color);
+            padding: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        @media (max-width: 480px) {
+            .option-card {
+                font-size: 0.95rem;
+                padding: 14px;
+            }
+        }
+
+        .option-card:hover:not(.disabled) {
+            border-color: #cbd5e0;
+            background-color: #f7fafc;
+            transform: translateY(-1px);
+        }
+
+        .option-card.selected {
+            border-color: var(--accent-color);
+            background-color: #eff6ff;
+        }
+
+        /* Richtig / Falsch Stile */
+        .option-card.correct {
+            border-color: var(--success-color);
+            background-color: #f0fff4;
+            color: #22543d;
+            font-weight: 500;
+        }
+
+        .option-card.incorrect {
+            border-color: var(--error-color);
+            background-color: #fff5f5;
+            color: #742a2a;
+            opacity: 0.8;
+        }
+
+        .option-card.disabled {
+            cursor: not-allowed;
+        }
+
+        /* Navigations-Bereich */
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-next {
+            background-color: #2d3748;
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s;
+            display: none; /* Erst nach Antwort anzeigen */
+            text-align: center;
+        }
+
+        .btn-next:hover {
+            background-color: #1a202c;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--success-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Hörverstehen: Russische Feiertage</h1>
+    <div class="instruction">Klicke auf Play, höre die Sprachnachricht und wähle die korrekte Bedeutung im Kontext aus.</div>
+
+    <div class="audio-section">
+        <div class="audio-status" id="audioStatus">Sprachnachricht abspielen:</div>
+        <button class="play-btn" id="playBtn" aria-label="Audio abspielen">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+    </div>
+
+    <div class="options-container" id="optionsContainer">
+        <!-- Wird per JS generiert -->
+    </div>
+
+    <div class="action-area">
+        <button class="btn-next" id="nextBtn">Nächste Frage</button>
+    </div>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+</div>
+
+<script>
+    // Aufgabenpool mit Fokus auf den feinen Unterschied (ganzer Monat vs. freie Tage)
+    const questions = [
+        {
+            text: "Какие планы на январские?",
+            options: [
+                { text: "Was sind deine Pläne für die freien Neujahrs- und Weihnachtstage?", correct: true },
+                { text: "Was hast du im gesamten Monat Januar vor?", correct: false },
+                { text: "Welche Pläne hast du für das kommende Jahr?", correct: false }
+            ]
+        },
+        {
+            text: "Что будешь делать на ноябрьские?",
+            options: [
+                { text: "Was machst du im gesamten Monat November?", correct: false },
+                { text: "Welche Pläne hast du für das Ende des Herbstes?", correct: false },
+                { text: "Was machst du an den November-Feiertagen?", correct: true }
+            ]
+        },
+        {
+            text: "Мы уезжаем на майские.",
+            options: [
+                { text: "Wir verreisen für die freien Tage rund um die Maifeiertage.", correct: true },
+                { text: "Wir ziehen im Laufe des Monats Mai um.", correct: false },
+                { text: "Wir verreisen für den kompletten Monat Mai.", correct: false }
+            ]
+        },
+        {
+            text: "Увидимся на мартовские!",
+            options: [
+                { text: "Wir sehen uns irgendwann im März.", correct: false },
+                { text: "Wir sehen uns an den freien Tagen rund um den Frauentag!", correct: true },
+                { text: "Wir sehen uns pünktlich zum Frühlingsanfang.", correct: false }
+            ]
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let voice = null;
+
+    const playBtn = document.getElementById('playBtn');
+    const optionsContainer = document.getElementById('optionsContainer');
+    const nextBtn = document.getElementById('nextBtn');
+    const progressFill = document.getElementById('progressFill');
+    const audioStatus = document.getElementById('audioStatus');
+
+    // Russische Stimme des Systems suchen
+    function loadVoices() {
+        if ('speechSynthesis' in window) {
+            const voices = window.speechSynthesis.getVoices();
+            // Versuche eine russische Stimme zu finden
+            voice = voices.find(v => v.lang.startsWith('ru')) || null;
+        }
+    }
+
+    // Voices werden asynchron geladen
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+    }
+
+    function playAudio(text) {
+        if ('speechSynthesis' in window) {
+            // Eventuell laufende Sprachausgaben stoppen
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ru-RU';
+            if (voice) utterance.voice = voice;
+            utterance.rate = 0.85; // Leicht verlangsamt für Schüler
+            
+            utterance.onstart = () => audioStatus.textContent = "Spielt ab... 🔊";
+            utterance.onend = () => audioStatus.textContent = "Erneut abspielen:";
+
+            window.speechSynthesis.speak(utterance);
+        } else {
+            alert("Die Sprachausgabe wird von Ihrem Browser leider nicht unterstützt.");
+        }
+    }
+
+    function loadQuestion() {
+        const currentQuestion = questions[currentQuestionIndex];
+        optionsContainer.innerHTML = '';
+        nextBtn.style.display = 'none';
+        audioStatus.textContent = "Sprachnachricht abspielen:";
+        
+        // Fortschrittsbalken aktualisieren
+        const progressPercent = (currentQuestionIndex / questions.length) * 100;
+        progressFill.style.width = `${progressPercent}%`;
+
+        // Play-Button Event aktualisieren
+        playBtn.onclick = () => playAudio(currentQuestion.text);
+
+        // Optionen mischen, damit die richtige Antwort nicht immer am selben Fleck ist
+        const shuffledOptions = [...currentQuestion.options].sort(() => Math.random() - 0.5);
+
+        shuffledOptions.forEach(opt => {
+            const card = document.createElement('div');
+            card.className = 'option-card';
+            card.textContent = opt.text;
+            
+            card.addEventListener('click', () => handleOptionSelect(card, opt.correct));
+            optionsContainer.appendChild(card);
+        });
+
+        // Automatisch beim Laden der ersten Frage Audio starten (wenn vom Browser erlaubt)
+        if(currentQuestionIndex > 0) {
+            setTimeout(() => playAudio(currentQuestion.text), 300);
+        }
+    }
+
+    function handleOptionSelect(selectedCard, isCorrect) {
+        const cards = optionsContainer.querySelectorAll('.option-card');
+        
+        // Klicks auf andere Karten sperren
+        cards.forEach(card => card.classList.add('disabled'));
+
+        if (isCorrect) {
+            selectedCard.classList.add('correct');
+        } else {
+            selectedCard.classList.add('incorrect');
+            // Die richtige Option nachträglich grün markieren, damit der Schüler lernt
+            cards.forEach((card, index) => {
+                // Suche die Karte, die den richtigen Text enthält
+                const currentQuestion = questions[currentQuestionIndex];
+                const correctText = currentQuestion.options.find(o => o.correct).text;
+                if(card.textContent === correctText) {
+                    card.classList.add('correct');
+                }
+            });
+        }
+
+        // Weiter-Button anzeigen
+        nextBtn.style.display = 'block';
+        if (currentQuestionIndex === questions.length - 1) {
+            nextBtn.textContent = "Quiz abschließen";
+        } else {
+            nextBtn.textContent = "Nächste Frage";
+        }
+    }
+
+    nextBtn.addEventListener('click', () => {
+        if (currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            loadQuestion();
+        } else {
+            // Quiz beendet
+            progressFill.style.width = '100%';
+            optionsContainer.innerHTML = '';
+            document.querySelector('.audio-section').style.display = 'none';
+            document.querySelector('.instruction').style.display = 'none';
+            document.querySelector('h1').textContent = "Gut gemacht! 🎉";
+            optionsContainer.innerHTML = `<div style="text-align: center; padding: 20px; font-size: 1.1rem;">
+                Du hast das feine Detail verstanden: Ausdrücke wie <b>январские</b> oder <b>майские</b> beziehen sich im Alltag immer konkret auf die <b>freien Feiertage</b> des Monats, niemals auf den gesamten Monat!
+            </div>`;
+            nextBtn.textContent = "Nochmal starten";
+            nextBtn.onclick = () => location.reload();
+        }
+    });
+
+    // Start der ersten Frage
+    loadQuestion();
+</script>
+
+</body>
+</html>
