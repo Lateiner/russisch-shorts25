@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Interaktiv: Memory-Spiel (6 Paare)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #ecf0f1;
+            --card-back: #34495e;
+            --card-front-ru: #2980b9;
+            --card-front-de: #27ae60;
+            --text-light: #ffffff;
+            --success-color: #2ecc71;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .instruction {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        /* Perfekt symmetrisches Grid für 12 Karten */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 Spalten x 4 Zeilen auf Handys */
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 15px;
+            perspective: 1000px;
+        }
+
+        @media (min-width: 480px) {
+            .memory-grid {
+                grid-template-columns: repeat(4, 1fr); /* 4 Spalten x 3 Zeilen auf Tablets/PC */
+                gap: 10px;
+            }
+        }
+
+        /* Karten-Struktur */
+        .memory-card {
+            aspect-ratio: 1 / 1;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.4s ease, opacity 0.8s ease;
+            cursor: pointer;
+        }
+
+        .memory-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .memory-card.matched {
+            transform: rotateY(180deg);
+            opacity: 0;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        /* Vorder- und Rückseite */
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 5px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            user-select: none;
+        }
+
+        @media (min-width: 480px) {
+            .card-face {
+                font-size: 0.95rem;
+                padding: 10px;
+            }
+        }
+
+        /* Rückseite */
+        .card-back {
+            background-color: var(--card-back);
+            color: var(--text-light);
+            font-size: 1.5rem;
+        }
+
+        /* Vorderseite */
+        .card-front {
+            transform: rotateY(180deg);
+            color: var(--text-light);
+        }
+
+        .card-front.ru {
+            background-color: var(--card-front-ru);
+            font-size: 1rem;
+        }
+
+        .card-front.de {
+            background-color: var(--card-front-de);
+            font-weight: 500;
+        }
+
+        /* Button & Feedback */
+        .btn-restart {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 5px;
+        }
+
+        .btn-restart:hover {
+            background-color: #2980b9;
+        }
+
+        .win-message {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--success-color);
+            margin: 15px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Paare finden: Feiertage</h1>
+    <div class="instruction">Finde das russische Wort und die passende deutsche Bedeutung!</div>
+
+    <div class="memory-grid" id="memoryGrid">
+        <!-- 12 Karten werden hier dynamisch erzeugt -->
+    </div>
+
+    <div class="win-message" id="winMessage">Отлично! Du hast alle Paare gefunden! 🎉</div>
+    <button class="btn-restart" id="restartBtn">Neustart</button>
+</div>
+
+<script>
+    // Jetzt 6 Paare (12 Karten) für ein sauberes, lückenloses Raster
+    const cardsData = [
+        { id: 1, text: "январские", lang: "ru" },
+        { id: 1, text: "die freien Tage im Januar", lang: "de" },
+        { id: 2, text: "февральские", lang: "ru" },
+        { id: 2, text: "die freien Tage im Februar", lang: "de" },
+        { id: 3, text: "мартовские", lang: "ru" },
+        { id: 3, text: "die freien Tage im März", lang: "de" },
+        { id: 4, text: "майские", lang: "ru" },
+        { id: 4, text: "die freien Tage im Mai", lang: "de" },
+        { id: 5, text: "ноябрьские", lang: "ru" },
+        { id: 5, text: "die freien Tage im November", lang: "de" },
+        { id: 6, text: "выходные / праздники", lang: "ru" },
+        { id: 6, text: "die freien Feiertage", lang: "de" }
+    ];
+
+    let firstCard = null;
+    let secondCard = null;
+    let lockBoard = false;
+    let matchedPairs = 0;
+
+    const memoryGrid = document.getElementById('memoryGrid');
+    const restartBtn = document.getElementById('restartBtn');
+    const winMessage = document.getElementById('winMessage');
+
+    function createBoard() {
+        memoryGrid.innerHTML = '';
+        winMessage.style.display = 'none';
+        matchedPairs = 0;
+        firstCard = null;
+        secondCard = null;
+        lockBoard = false;
+
+        // Karten durchmischen
+        const shuffledCards = [...cardsData].sort(() => Math.random() - 0.5);
+
+        shuffledCards.forEach(data => {
+            const card = document.createElement('div');
+            card.className = 'memory-card';
+            card.setAttribute('data-pair-id', data.id);
+
+            card.innerHTML = `
+                <div class="card-face card-back">?</div>
+                <div class="card-face card-front ${data.lang}">${data.text}</div>
+            `;
+
+            card.addEventListener('click', flipCard);
+            memoryGrid.appendChild(card);
+        });
+    }
+
+    function flipCard() {
+        if (lockBoard) return;
+        if (this === firstCard) return;
+
+        this.classList.add('flipped');
+
+        if (!firstCard) {
+            firstCard = this;
+            return;
+        }
+
+        secondCard = this;
+        checkForMatch();
+    }
+
+    function checkForMatch() {
+        let isMatch = firstCard.getAttribute('data-pair-id') === secondCard.getAttribute('data-pair-id');
+
+        if (isMatch) {
+            disableCards();
+        } else {
+            unflipCards();
+        }
+    }
+
+    function disableCards() {
+        lockBoard = true;
+        matchedPairs++;
+
+        setTimeout(() => {
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+            
+            resetBoardAfterTurn();
+            
+            if (matchedPairs === cardsData.length / 2) {
+                setTimeout(() => {
+                    winMessage.style.display = 'block';
+                }, 600);
+            }
+        }, 500);
+    }
+
+    function unflipCards() {
+        lockBoard = true;
+
+        setTimeout(() => {
+            firstCard.classList.remove('flipped');
+            secondCard.classList.remove('flipped');
+            resetBoardAfterTurn();
+        }, 1200);
+    }
+
+    function resetBoardAfterTurn() {
+        [firstCard, secondCard] = [null, null];
+        lockBoard = false;
+    }
+
+    restartBtn.addEventListener('click', createBoard);
+
+    // Initialer Start
+    createBoard();
+</script>
+
+</body>
+</html>
