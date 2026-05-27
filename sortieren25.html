@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Interaktiv: Feiertage sortieren</title>
+    <style>
+        :root {
+            --primary-color: #2d3748;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-color: #1a202c;
+            --border-color: #e2e8f0;
+            --left-bucket: #3182ce;
+            --right-bucket: #dd6b20;
+            --success-color: #38a169;
+            --error-color: #e53e3e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* Verhindert Scrollen beim Swipen */
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .instruction {
+            font-size: 0.85rem;
+            color: #718096;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Die Töpfe / Zielbereiche */
+        .buckets-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .bucket {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.05rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .bucket-left { background-color: var(--left-bucket); }
+        .bucket-right { background-color: var(--right-bucket); }
+        
+        .bucket:active { transform: scale(0.95); }
+
+        /* Karten-Spielfeld */
+        .card-zone {
+            width: 100%;
+            height: 220px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        /* Die bewegliche Karte */
+        .swipe-card {
+            width: 85%;
+            height: 100%;
+            background: #fff;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            touch-action: none; /* Deaktiviert Browser-Gesten */
+            transition: transform 0.1s ease, opacity 0.1s ease;
+        }
+
+        .swipe-card:active { cursor: grabbing; }
+        
+        .swipe-card span {
+            font-size: 0.85rem;
+            color: #a0aec0;
+            font-weight: normal;
+            margin-top: 10px;
+            display: block;
+        }
+
+        /* Feedback-Meldungen */
+        .feedback {
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: center;
+            min-height: 30px;
+            margin-bottom: 10px;
+        }
+        .feedback.correct { color: var(--success-color); }
+        .feedback.incorrect { color: var(--error-color); }
+
+        /* Ergebnis-Bildschirm */
+        .results {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .score {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #3182ce;
+            margin: 15px 0;
+        }
+        .btn-restart {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="gameZone" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+        <h1>Feiertage zuordnen</h1>
+        <div class="instruction">Ziehe die Karte nach links/rechts oder klicke direkt auf die Töpfe!</div>
+
+        <!-- Töpfe oben für optimale Daumen-Erreichbarkeit auf Handys -->
+        <div class="buckets-container">
+            <div class="bucket bucket-left" id="btnLeft">← январские</div>
+            <div class="bucket bucket-right" id="btnRight">февральские →</div>
+        </div>
+
+        <div class="card-zone">
+            <div class="swipe-card" id="swipeCard">
+                <div id="cardText">Tag des Vaterlandsverteidigers</div>
+                <span>↔ Wische oder klicke einen Topf ↔</span>
+            </div>
+        </div>
+
+        <div class="feedback" id="feedbackText"></div>
+    </div>
+
+    <!-- Ergebnisbereich -->
+    <div class="results" id="resultsZone">
+        <h1>Sehr gut gemacht!</h1>
+        <div class="score" id="scoreText">0 / 0</div>
+        <p style="margin-bottom: 20px; color: #4a5568;">Du hast die russischen Feiertage erfolgreich den passenden umgangssprachlichen Begriffen zugeordnet!</p>
+        <button class="btn-restart" id="restartBtn">Neustart</button>
+    </div>
+</div>
+
+<script>
+    // Spieldaten: Deutsche Feiertage und ihre Zuordnung (true = links/январские, false = rechts/февральские)
+    const cardsData = [
+        { text: "Tag des Vaterlandsverteidigers<br>(23. Februar)", isLeft: false },
+        { text: "Russisches Neujahrsfest<br>(1. Januar)", isLeft: true },
+        { text: "Orthodoxe Weihnachten<br>(7. Januar)", isLeft: true },
+        { text: "Beginn der großen Winterferien<br>(Anfang Januar)", isLeft: true },
+        { text: "Männerfeiertag / Soldatentag<br>(Ende Februar)", isLeft: false }
+    ];
+
+    let shuffledCards = [];
+    let currentCardIndex = 0;
+    let score = 0;
+
+    // Swipe-Variablen
+    let startX = 0;
+    let currentX = 0;
+    let isDragging = false;
+
+    const card = document.getElementById('swipeCard');
+    const cardText = document.getElementById('cardText');
+    const feedbackText = document.getElementById('feedbackText');
+    const gameZone = document.getElementById('gameZone');
+    const resultsZone = document.getElementById('resultsZone');
+    const scoreText = document.getElementById('scoreText');
+    
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const restartBtn = document.getElementById('restartBtn');
+
+    function initGame() {
+        score = 0;
+        currentCardIndex = 0;
+        feedbackText.textContent = "";
+        gameZone.style.display = "flex";
+        resultsZone.style.display = "none";
+        
+        // Karten mischen
+        shuffledCards = [...cardsData].sort(() => Math.random() - 0.5);
+        showCard();
+    }
+
+    function showCard() {
+        if (currentCardIndex < shuffledCards.length) {
+            card.style.transition = "none";
+            card.style.transform = "translateX(0px) rotate(0deg)";
+            card.style.opacity = "1";
+            cardText.innerHTML = shuffledCards[currentCardIndex].text;
+        } else {
+            // Spielende
+            gameZone.style.display = "none";
+            resultsZone.style.display = "block";
+            scoreText.textContent = `${score} / ${shuffledCards.length}`;
+        }
+    }
+
+    function evaluateChoice(choseLeft) {
+        const currentItem = shuffledCards[currentCardIndex];
+        const correct = (choseLeft === currentItem.isLeft);
+
+        if (correct) {
+            score++;
+            feedbackText.textContent = "Richtig! ✨";
+            feedbackText.className = "feedback correct";
+        } else {
+            feedbackText.textContent = "Falscher Topf! ❌";
+            feedbackText.className = "feedback incorrect";
+        }
+
+        currentCardIndex++;
+        
+        // Karte elegant aus dem Bildschirm fliegen lassen
+        card.style.transition = "all 0.3s ease";
+        const flyX = choseLeft ? -400 : 400;
+        card.style.transform = `translateX(${flyX}px) rotate(${flyX / 10}deg)`;
+        card.style.opacity = "0";
+
+        // Nächste Karte nach kurzer Pause laden
+        setTimeout(showCard, 300);
+    }
+
+    /* Klick-Steuerung für Töpfe (Desktop & schnellerer Touch) */
+    btnLeft.addEventListener('click', () => evaluateChoice(true));
+    btnRight.addEventListener('click', () => evaluateChoice(false));
+    restartBtn.addEventListener('click', initGame);
+
+    /* Touch & Drag Steuerung (Echtes Swipen) */
+    card.addEventListener('mousedown', dragStart);
+    card.addEventListener('touchstart', dragStart, { passive: true });
+
+    window.addEventListener('mousemove', dragMove);
+    window.addEventListener('touchmove', dragMove, { passive: false });
+
+    window.addEventListener('mouseup', dragEnd);
+    window.addEventListener('touchend', dragEnd);
+
+    function dragStart(e) {
+        isDragging = true;
+        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        card.style.transition = "none";
+    }
+
+    function dragMove(e) {
+        if (!isDragging) return;
+        
+        currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        const diffX = currentX - startX;
+        
+        // Leichtes Drehen beim Ziehen für natürlichen App-Effekt
+        card.style.transform = `translateX(${diffX}px) rotate(${diffX * 0.05}deg)`;
+
+        // Verhindert das Scrollen der Website auf dem Smartphone beim Ziehen
+        if (e.cancelable) e.preventDefault();
+    }
+
+    function dragEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        const diffX = currentX - startX;
+        const swipeThreshold = 100; // Pixel-Schwelle für erfolgreichen Swipe
+
+        if (diffX < -swipeThreshold) {
+            // Nach links gewischt
+            evaluateChoice(true);
+        } else if (diffX > swipeThreshold) {
+            // Nach rechts gewischt
+            evaluateChoice(false);
+        } else {
+            // Nicht weit genug gezogen -> Zurücksetzen
+            card.style.transition = "transform 0.2s ease";
+            card.style.transform = "translateX(0px) rotate(0deg)";
+        }
+        startX = 0;
+        currentX = 0;
+    }
+
+    // Spiel direkt starten
+    initGame();
+</script>
+
+</body>
+</html>
