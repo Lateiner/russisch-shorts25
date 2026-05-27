@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Interaktiv: Umgekehrte Übersetzung</title>
+    <style>
+        :root {
+            --primary-color: #2d3748;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-color: #1a202c;
+            --border-color: #e2e8f0;
+            --success-color: #38a169;
+            --success-bg: #f0fff4;
+            --error-color: #e53e3e;
+            --error-bg: #fff5f5;
+            --accent-color: #4a5568;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #718096;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        /* Fortschritt */
+        .progress-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #718096;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            flex-grow: 1;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            margin-right: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #3182ce;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Vorgabe-Satz */
+        .russian-prompt {
+            background-color: #ebf8ff;
+            border-left: 5px solid #3182ce;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2b6cb0;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        /* Antwort-Optionen */
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 1rem;
+            text-align: left;
+            background-color: white;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            color: var(--text-color);
+            outline: none;
+        }
+
+        .option-btn:hover:not(.disabled) {
+            border-color: #cbd5e0;
+            background-color: #f7fafc;
+            transform: translateX(2px);
+        }
+
+        /* Zustände nach Klick */
+        .option-btn.correct {
+            background-color: var(--success-bg);
+            border-color: var(--success-color);
+            color: #22543d;
+            font-weight: bold;
+        }
+
+        .option-btn.incorrect {
+            background-color: var(--error-bg);
+            border-color: var(--error-color);
+            color: #742a2a;
+        }
+
+        .option-btn.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Feedback-Box */
+        .feedback-box {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            display: none;
+            font-size: 0.95rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .feedback-box.correct { background-color: var(--success-bg); border-left: 4px solid var(--success-color); color: #22543d; }
+        .feedback-box.incorrect { background-color: var(--error-bg); border-left: 4px solid var(--error-color); color: #742a2a; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Navigation */
+        .action-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            transition: background-color 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: #1a202c;
+        }
+
+        /* Ergebnis-Bildschirm */
+        .results-screen {
+            text-align: center;
+            display: none;
+        }
+
+        .score-display {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #3182ce;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="quiz-screen">
+        <h1>Umgekehrte Übersetzung</h1>
+        <div class="subtitle">Wähle die natürlichste deutsche Übersetzung für den russischen Satz:</div>
+
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span id="progressText">Frage 1 / 4</span>
+        </div>
+
+        <div class="russian-prompt" id="russianPrompt">
+            <!-- Wird per JS befüllt -->
+        </div>
+
+        <div class="options-grid" id="optionsGrid">
+            <!-- 4 Buttons werden per JS befüllt -->
+        </div>
+
+        <div class="feedback-box" id="feedbackBox">
+            <!-- Feedback-Text -->
+        </div>
+
+        <button class="action-btn" id="nextBtn">Nächste Frage</button>
+    </div>
+
+    <!-- Ergebnis-Bildschirm -->
+    <div class="results-screen" id="resultsScreen">
+        <h1>Übung abgeschlossen!</h1>
+        <div class="score-display" id="scoreDisplay">0 / 0</div>
+        <p id="resultComment" style="margin-bottom: 25px; color: #4a5568; font-size: 1.05rem;"></p>
+        <button class="action-btn" id="restartBtn" style="display: block;">Übung wiederholen</button>
+    </div>
+</div>
+
+<script>
+    const quizData = [
+        {
+            russian: "Что будешь делать на ноябрьские?",
+            options: [
+                "Was wirst du den gesamten November über tun?",
+                "Was machst du an den November-Feiertagen?",
+                "Warum magst du das Wetter im November nicht?",
+                "Wann fangen die November-Wochen an?"
+            ],
+            correctIndex: 1,
+            explanation: "<b>Richtig!</b> Im Alltag steht das substantivierte Adjektiv im Plural kurz für die arbeitsfreien Feiertage oder das verlängerte Wochenende in diesem Monat."
+        },
+        {
+            russian: "Какие планы на январские?",
+            options: [
+                "Welche Pläne hast du für die freien Januar-Tage?",
+                "Gibt es im Januar überhaupt Pläne?",
+                "Welcher Monat kommt nach dem Januar?",
+                "Wie planst du deinen gesamten Januar-Urlaub?"
+            ],
+            correctIndex: 0,
+            explanation: "<b>Richtig!</b> „январские“ bezieht sich spezifisch auf die langen russischen Neujahrs- und Weihnachtsferien Anfang Januar."
+        },
+        {
+            russian: "Мы едем на дачу на майские.",
+            options: [
+                "Wir wollen im Mai ein Haus kaufen.",
+                "Wir fahren im Mai jeden Tag zur Arbeit.",
+                "Wir fahren an den Mai-Feiertagen auf die Datscha.",
+                "Unsere Datscha wird im Mai renoviert."
+            ],
+            correctIndex: 2,
+            explanation: "<b>Richtig!</b> Die Mai-Feiertage („майские“) sind in Russland traditionell der klassische Zeitpunkt, um die Datscha-Saison zu eröffnen."
+        },
+        {
+            russian: "Знали об этом?",
+            options: [
+                "Habt ihr das verstanden?",
+                "Wusstet ihr davon?",
+                "Wer hat das gesagt?",
+                "Stimmt das wirklich?"
+            ],
+            correctIndex: 1,
+            explanation: "<b>Richtig!</b> Das ist die direkte, alltagssprachliche Frage, um zu überprüfen, ob den Zuhörern eine bestimmte Information oder ein Fakt bereits bekannt war."
+        }
+    ];
+
+    let currentIndex = 0;
+    let score = 0;
+
+    const russianPrompt = document.getElementById('russianPrompt');
+    const optionsGrid = document.getElementById('optionsGrid');
+    const feedbackBox = document.getElementById('feedbackBox');
+    const nextBtn = document.getElementById('nextBtn');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultsScreen = document.getElementById('resultsScreen');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const resultComment = document.getElementById('resultComment');
+    const restartBtn = document.getElementById('restartBtn');
+
+    function loadQuestion() {
+        feedbackBox.style.display = 'none';
+        nextBtn.style.display = 'none';
+        optionsGrid.innerHTML = '';
+
+        const currentData = quizData[currentIndex];
+        russianPrompt.textContent = currentData.russian;
+
+        // Optionen generieren
+        currentData.options.forEach((optionText, index) => {
+            const button = document.createElement('button');
+            button.className = 'option-btn';
+            button.textContent = optionText;
+            button.addEventListener('click', () => handleSelectOption(index, button));
+            optionsGrid.appendChild(button);
+        });
+
+        // Fortschritt aktualisieren
+        const progressPercent = (currentIndex / quizData.length) * 100;
+        progressFill.style.width = `${progressPercent}%`;
+        progressText.textContent = `Frage ${currentIndex + 1} / ${quizData.length}`;
+    }
+
+    function handleSelectOption(selectedIndex, clickedButton) {
+        // Klicks nach der Auswahl sperren
+        if (nextBtn.style.display === 'block') return;
+
+        const currentData = quizData[currentIndex];
+        const allButtons = optionsGrid.querySelectorAll('.option-btn');
+
+        if (selectedIndex === currentData.correctIndex) {
+            score++;
+            clickedButton.classList.add('correct');
+            feedbackBox.className = "feedback-box correct";
+            feedbackBox.innerHTML = currentData.explanation;
+        } else {
+            clickedButton.classList.add('incorrect');
+            // Richtige Antwort zusätzlich grün hervorheben
+            allButtons[currentData.correctIndex].classList.add('correct');
+            feedbackBox.className = "feedback-box incorrect";
+            feedbackBox.innerHTML = `<b>Nicht ganz!</b> Die richtige Antwort wäre gewesen: „${currentData.options[currentData.correctIndex]}“<br><br>${currentData.explanation}`;
+        }
+
+        // Alle Optionen deaktivieren
+        allButtons.forEach(btn => btn.classList.add('disabled'));
+
+        feedbackBox.style.display = 'block';
+        nextBtn.style.display = 'block';
+
+        if (currentIndex === quizData.length - 1) {
+            nextBtn.textContent = "Zur Auswertung";
+        } else {
+            nextBtn.textContent = "Nächste Frage";
+        }
+    }
+
+    nextBtn.addEventListener('click', () => {
+        if (currentIndex < quizData.length - 1) {
+            currentIndex++;
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    });
+
+    function showResults() {
+        quizScreen.style.display = 'none';
+        resultsScreen.style.display = 'block';
+        scoreDisplay.textContent = `${score} / ${quizData.length}`;
+
+        if (score === quizData.length) {
+            resultComment.textContent = "Hervorragend! Du hast alle Sätze absolut sinngemäß und fehlerfrei übersetzt. 🌟";
+        } else if (score >= quizData.length / 2) {
+            resultComment.textContent = "Gute Arbeit! Dein Verständnis für die Nuancen der russischen Umgangssprache ist schon sehr sicher. 🚀";
+        } else {
+            resultComment.textContent = "Das macht nichts! Wiederhole die Übung einfach noch einmal, um die Bedeutungen zu festigen.";
+        }
+    }
+
+    restartBtn.addEventListener('click', () => {
+        currentIndex = 0;
+        score = 0;
+        resultsScreen.style.display = 'none';
+        quizScreen.style.display = 'block';
+        nextBtn.textContent = "Nächste Frage";
+        loadQuestion();
+    });
+
+    // Erster Start
+    loadQuestion();
+</script>
+
+</body>
+</html>
